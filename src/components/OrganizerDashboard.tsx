@@ -34,7 +34,21 @@ export function OrganizerDashboard() {
     functionName: 'getLockedReserve',
   });
 
-  // 3. Get Contract Owner to verify access
+  // 3. Get Total Tickets Minted
+  const { data: totalTickets } = useReadContract({
+    address: contractAddress,
+    abi: contractABI,
+    functionName: 'getTotalTicketsMinted',
+  });
+
+  // 4. Get Ticket Price
+  const { data: ticketPrice } = useReadContract({
+    address: contractAddress,
+    abi: contractABI,
+    functionName: 'ticketPrice',
+  });
+
+  // 5. Get Contract Owner to verify access
   const { data: owner } = useReadContract({
     address: contractAddress,
     abi: contractABI,
@@ -69,9 +83,9 @@ export function OrganizerDashboard() {
   useEffect(() => {
     if (writeError && isProcessing) {
       setIsProcessing(false);
-      
+
       let errorMessage = writeError.message;
-      
+
       if (writeError instanceof BaseError) {
         const revertError = writeError.walk(err => err instanceof ContractFunctionRevertedError);
         if (revertError instanceof ContractFunctionRevertedError) {
@@ -90,7 +104,7 @@ export function OrganizerDashboard() {
   // Handle Withdraw Action
   const handleWithdraw = () => {
     if (!withdrawAmount || isNaN(Number(withdrawAmount))) return;
-    
+
     setIsProcessing(true);
     writeContract({
       address: contractAddress,
@@ -103,7 +117,10 @@ export function OrganizerDashboard() {
   // Calculations
   const totalBalance = balanceData ? BigInt(balanceData.value) : 0n;
   const reserve = lockedReserve ? BigInt(lockedReserve as bigint) : 0n;
-  
+  const ticketsSold = totalTickets ? Number(totalTickets) : 0;
+  const price = ticketPrice ? BigInt(ticketPrice) : 0n;
+  const totalRevenue = price * BigInt(ticketsSold);
+
   // Available to withdraw = Balance - Reserve
   // If Balance < Reserve (Bank Run scenario), Available is 0
   let availableToWithdraw = totalBalance - reserve;
@@ -112,6 +129,7 @@ export function OrganizerDashboard() {
   const formattedBalance = balanceData ? formatEther(balanceData.value) : '0';
   const formattedReserve = lockedReserve ? formatEther(lockedReserve as bigint) : '0';
   const formattedAvailable = formatEther(availableToWithdraw);
+  const formattedRevenue = formatEther(totalRevenue);
 
   // Access Control Check
   if (isConnected && owner && address && owner.toLowerCase() !== address.toLowerCase()) {
@@ -143,15 +161,26 @@ export function OrganizerDashboard() {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Contract Balance</CardTitle>
+            <CardTitle className="text-sm font-medium">Tickets Vendidos</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{ticketsSold}</div>
+            <p className="text-xs text-muted-foreground">Total tickets minted</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{parseFloat(formattedBalance).toFixed(4)} MATIC</div>
-            <p className="text-xs text-muted-foreground">Current funds in contract</p>
+            <div className="text-2xl font-bold">{parseFloat(formattedRevenue).toFixed(4)} ETH</div>
+            <p className="text-xs text-muted-foreground">Tickets sold × price</p>
           </CardContent>
         </Card>
 
@@ -161,7 +190,7 @@ export function OrganizerDashboard() {
             <Lock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{parseFloat(formattedReserve).toFixed(4)} MATIC</div>
+            <div className="text-2xl font-bold">{parseFloat(formattedReserve).toFixed(4)} ETH</div>
             <p className="text-xs text-muted-foreground">Reserved for refund liq.</p>
           </CardContent>
         </Card>
@@ -173,7 +202,7 @@ export function OrganizerDashboard() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${availableToWithdraw > 0n ? 'text-green-600' : 'text-gray-500'}`}>
-              {parseFloat(formattedAvailable).toFixed(4)} MATIC
+              {parseFloat(formattedAvailable).toFixed(4)} ETH
             </div>
             <p className="text-xs text-muted-foreground">Safe to withdraw</p>
           </CardContent>
@@ -191,16 +220,16 @@ export function OrganizerDashboard() {
         <CardContent>
           <div className="flex w-full max-w-sm items-center space-x-2">
             <div className="relative flex-1">
-              <Input 
-                type="number" 
-                placeholder="0.0" 
+              <Input
+                type="number"
+                placeholder="0.0"
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
                 disabled={isProcessing || isConfirming || availableToWithdraw <= 0n}
               />
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="absolute right-0 top-0 h-full px-3 py-2 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => setWithdrawAmount(formattedAvailable)}
                 disabled={isProcessing || isConfirming || availableToWithdraw <= 0n}
@@ -208,13 +237,13 @@ export function OrganizerDashboard() {
                 MAX
               </Button>
             </div>
-            <Button 
-              onClick={handleWithdraw} 
+            <Button
+              onClick={handleWithdraw}
               disabled={
-                !withdrawAmount || 
-                isProcessing || 
-                isConfirming || 
-                Number(withdrawAmount) <= 0 || 
+                !withdrawAmount ||
+                isProcessing ||
+                isConfirming ||
+                Number(withdrawAmount) <= 0 ||
                 parseEther(withdrawAmount || '0') > availableToWithdraw
               }
             >
@@ -229,9 +258,9 @@ export function OrganizerDashboard() {
             </Button>
           </div>
           {availableToWithdraw <= 0n && totalBalance > 0n && (
-             <p className="text-sm text-yellow-600 mt-2">
-               ⚠️ Funds are currently locked in reserve for potential refunds.
-             </p>
+            <p className="text-sm text-yellow-600 mt-2">
+              ⚠️ Funds are currently locked in reserve for potential refunds.
+            </p>
           )}
         </CardContent>
       </Card>

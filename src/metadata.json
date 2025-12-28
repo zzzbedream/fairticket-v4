@@ -6,8 +6,8 @@
       "rpc_url": "https://dev-rpc.codenut.dev",
       "contracts": [
         {
-          "address": "0x550d950c78c14e336329cdcfb4ac4d89a18dfc4c",
-          "txHash": "0xc67d842419f4f3de71c927b9e7e29bfa65d74d4af23dc3ec1e1c46250bd1d185",
+          "address": "0xF3FE049713Ef283Aea459BEF2b501A0599c45418",
+          "txHash": "0x1d71c38ec2dde9b0b6d4a072de3e658b6a24deac9f6469b3b11916dfd6af93d8",
           "contractName": "FairTicketV4",
           "abi": [
             {

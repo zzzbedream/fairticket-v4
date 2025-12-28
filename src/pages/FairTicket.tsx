@@ -11,6 +11,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { ForceConnectButton } from '@/components/ForceConnectButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { formatEther, parseEther } from 'viem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -202,26 +203,23 @@ export default function FairTicket() {
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              FairTicket V4
-            </h1>
-            <p className="text-muted-foreground mt-1">Soulbound Event Tickets with Bank Run Protection</p>
-          </div>
-          <ConnectButton />
-        </div>
+
+          {isConnected ? <ConnectButton /> : <ForceConnectButton />}
+        </div >
 
         {/* Reserve Health Alert */}
-        {!isReserveHealthy && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Reserve Liquidity Warning</AlertTitle>
-            <AlertDescription>
-              Contract balance is below the required 20% reserve. Some refunds may fail until liquidity is restored.
-              Current health: {reserveHealth.toFixed(0)}%
-            </AlertDescription>
-          </Alert>
-        )}
+        {
+          !isReserveHealthy && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Reserve Liquidity Warning</AlertTitle>
+              <AlertDescription>
+                Contract balance is below the required 20% reserve. Some refunds may fail until liquidity is restored.
+                Current health: {reserveHealth.toFixed(0)}%
+              </AlertDescription>
+            </Alert>
+          )
+        }
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Event Info */}
@@ -274,8 +272,8 @@ export default function FairTicket() {
 
               {isConnected ? (
                 <div className="space-y-3">
-                  <Button 
-                    onClick={handleMintTicket} 
+                  <Button
+                    onClick={handleMintTicket}
                     disabled={isMinting}
                     className="w-full"
                     size="lg"
@@ -335,7 +333,7 @@ export default function FairTicket() {
                 <p className="text-sm text-muted-foreground">Reserve Health</p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full transition-all ${isReserveHealthy ? 'bg-green-500' : 'bg-red-500'}`}
                       style={{ width: `${Math.min(reserveHealth, 100)}%` }}
                     />
@@ -376,8 +374,8 @@ export default function FairTicket() {
                           <Badge>Soulbound</Badge>
                         </div>
                         <Separator className="my-4" />
-                        <SmartRefundButton 
-                          tokenId={BigInt(i + 1)} 
+                        <SmartRefundButton
+                          tokenId={BigInt(i + 1)}
                           userAddress={address}
                           onSuccess={refetchBalance}
                         />
@@ -415,7 +413,7 @@ export default function FairTicket() {
                   onChange={(e) => setDepositAmount(e.target.value)}
                   step="0.01"
                 />
-                <Button 
+                <Button
                   onClick={handleDepositReserve}
                   disabled={isDepositing || !isConnected}
                   className="w-full"
@@ -446,7 +444,7 @@ export default function FairTicket() {
                         onChange={(e) => setWithdrawAmount(e.target.value)}
                         step="0.01"
                       />
-                      <Button 
+                      <Button
                         onClick={handleWithdraw}
                         disabled={isWithdrawing}
                       >
@@ -454,7 +452,7 @@ export default function FairTicket() {
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Maximum withdrawable: {contractBalance && lockedReserve 
+                      Maximum withdrawable: {contractBalance && lockedReserve
                         ? parseFloat(formatEther(contractBalance > lockedReserve ? contractBalance - lockedReserve : 0n)).toFixed(4)
                         : '0'} MATIC
                     </p>
@@ -464,7 +462,7 @@ export default function FairTicket() {
             </Card>
           )}
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
